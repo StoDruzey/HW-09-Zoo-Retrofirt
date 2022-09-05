@@ -1,10 +1,12 @@
 package com.example.hw09zooretrofirt
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import coil.load
 import com.example.hw09zooretrofirt.databinding.FragmentRecyclerBinding
 import com.google.gson.Gson
@@ -26,6 +28,8 @@ class RecyclerFragment : Fragment() {
     private var _binding: FragmentRecyclerBinding? = null
     private val binding get() = requireNotNull(_binding)
 
+    val adapter by lazy { AnimalAdapter(requireContext()) }
+
     private var randomRequest: Call<List<Animal>>? = null
 
     override fun onCreateView(
@@ -41,6 +45,12 @@ class RecyclerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        with(binding) {
+
+
+            recyclerView.adapter = adapter
+        }
+
         val retrofit = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl("https://zoo-animal-api.herokuapp.com/")
@@ -54,8 +64,8 @@ class RecyclerFragment : Fragment() {
                 enqueue(object : Callback<List<Animal>> {
                     override fun onResponse(call: Call<List<Animal>>, response: Response<List<Animal>>) {
                         if (response.isSuccessful) {
-                            val animal = response.body() ?: return
-                            binding.imageView.load(animal[0].url)
+                            val animals = response.body() ?: return
+                            adapter.submitList(animals)
                         } else {
                             handleException(HttpException(response))
                         }
@@ -76,8 +86,8 @@ class RecyclerFragment : Fragment() {
         _binding = null
     }
 
-    private fun handleException(t: Throwable) {
-
+    private fun handleException(e: Throwable) {
+        Toast.makeText(requireContext(), e.message ?: "Something went wrong", Toast.LENGTH_SHORT).show()
     }
 
     // TODO: Rename and change types of parameters
