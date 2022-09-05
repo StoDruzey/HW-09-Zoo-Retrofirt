@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import coil.load
 import com.example.hw09zooretrofirt.databinding.FragmentRecyclerBinding
 import com.google.gson.Gson
 import retrofit2.*
@@ -25,7 +26,7 @@ class RecyclerFragment : Fragment() {
     private var _binding: FragmentRecyclerBinding? = null
     private val binding get() = requireNotNull(_binding)
 
-
+    private var randomRequest: Call<List<Animal>>? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,23 +47,37 @@ class RecyclerFragment : Fragment() {
             .build()
 
         val animalsApi = retrofit.create<AnimalsApi>()
-        animalsApi
-            .fetchAnimals()
-            .enqueue(object : Callback<List<Animal>> {
-                override fun onResponse(call: Call<List<Animal>>, response: Response<List<Animal>>
-                ) {
-                    println()
-                }
 
-                override fun onFailure(call: Call<List<Animal>>, t: Throwable) {
-                    println()
-                }
-            })
+        randomRequest = animalsApi
+            .fetchAnimals()
+            .apply {
+                enqueue(object : Callback<List<Animal>> {
+                    override fun onResponse(call: Call<List<Animal>>, response: Response<List<Animal>>) {
+                        if (response.isSuccessful) {
+                            val animal = response.body() ?: return
+                            binding.imageView.load(animal[0].url)
+                        } else {
+                            handleException(HttpException(response))
+                        }
+                    }
+
+                    override fun onFailure(call: Call<List<Animal>>, t: Throwable) {
+                        if (!call.isCanceled) {
+                            handleException(t)
+                        }
+                    }
+                })
+            }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        randomRequest?.cancel()
         _binding = null
+    }
+
+    private fun handleException(t: Throwable) {
+
     }
 
     // TODO: Rename and change types of parameters
